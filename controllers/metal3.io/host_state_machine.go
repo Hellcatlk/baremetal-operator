@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
+	"reflect"
 
 	metal3v1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 	"github.com/metal3-io/baremetal-operator/pkg/provisioner"
@@ -322,6 +324,11 @@ func (hsm *hostStateMachine) ensureRegistered(info *reconcileInfo) (result actio
 }
 
 func (hsm *hostStateMachine) handleNone(info *reconcileInfo) actionResult {
+	err := hsm.ConfigurePxeNetwork()
+	if err != nil {
+		return actionError{err}
+	}
+
 	// No state is set, so immediately move to either Registering or Unmanaged
 	if hsm.Host.HasBMCDetails() {
 		hsm.NextState = metal3v1alpha1.StateRegistering
@@ -463,11 +470,20 @@ func (hsm *hostStateMachine) handleProvisioned(info *reconcileInfo) actionResult
 		return actionComplete{}
 	}
 
+	err := hsm.ConfigureNetwork()
+	if err != nil {
+		return actionError{err}
+	}
+
 	// ErrorCount is cleared when appropriate inside actionManageSteadyState
 	return hsm.Reconciler.actionManageSteadyState(hsm.Provisioner, info)
 }
 
 func (hsm *hostStateMachine) handleDeprovisioning(info *reconcileInfo) actionResult {
+	err := hsm.ConfigurePxeNetwork()
+	if err != nil {
+		return actionError{err}
+	}
 	actResult := hsm.Reconciler.actionDeprovisioning(hsm.Provisioner, info)
 
 	if hsm.Host.DeletionTimestamp.IsZero() {
@@ -505,5 +521,58 @@ func (hsm *hostStateMachine) handleDeprovisioning(info *reconcileInfo) actionRes
 }
 
 func (hsm *hostStateMachine) handleDeleting(info *reconcileInfo) actionResult {
+	err := hsm.CleanNetwork()
+	if err != nil {
+		return actionError{err}
+	}
 	return hsm.Reconciler.actionDeleting(hsm.Provisioner, info)
+}
+
+func (hsm *hostStateMachine) ConfigurePxeNetwork() error {
+	for _, port := range hsm.Host.Spec.Ports {
+		switchPort, err := port.SwitchPort.Fetch(context.Background(), hsm.Reconciler.Client)
+		if err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(switchPort.Spec.Configuration, port.ProvisioningSwitchPortConfiguration) {
+			switchPort.Spec.Configuration = port.ProvisioningSwitchPortConfiguration
+			err = hsm.Reconciler.Client.Update(context.Background(), switchPort)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (hsm *hostStateMachine) ConfigureNetwork() error {
+	for _, port := range hsm.Host.Spec.Ports {
+		switchPort, err := port.SwitchPort.Fetch(context.Background(), hsm.Reconciler.Client)
+		if err != nil {
+			return err
+		}
+
+		switchPort.Spec.Configuration = port.SwitchPortConfiguration
+		err = hsm.Reconciler.Client.Update(context.Background(), switchPort)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (hsm *hostStateMachine) CleanNetwork() error {
+	for _, port := range hsm.Host.Spec.Ports {
+		switchPort, err := port.SwitchPort.Fetch(context.Background(), hsm.Reconciler.Client)
+		if err != nil {
+			return err
+		}
+		switchPort.Spec.Configuration = nil
+		err = hsm.Reconciler.Client.Update(context.Background(), switchPort)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

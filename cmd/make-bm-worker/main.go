@@ -22,6 +22,9 @@ func main() {
 		"consumer", "", "specify name of a related, existing, consumer to link")
 	var consumerNamespace = flag.String(
 		"consumer-namespace", "", "specify namespace of a related, existing, consumer to link")
+	var switchPort = flag.String("switch-port", "", "switch-port name")
+	var ProvisioningSwitchPortConfiguration = flag.String("provisioning-switch-port-configuration", "", "provisioning-switch-port-configuration name")
+	var switchPortConfiguration = flag.String("switch-port-configuration", "", "switch-port-configuration name")
 
 	flag.Parse()
 
@@ -49,15 +52,18 @@ func main() {
 	}
 
 	template := templates.Template{
-		Name:                           strings.Replace(hostName, "_", "-", -1),
-		BMCAddress:                     *bmcAddress,
-		DisableCertificateVerification: *disableCertificateVerification,
-		Username:                       *username,
-		Password:                       *password,
-		HardwareProfile:                *hardwareProfile,
-		BootMacAddress:                 *macAddress,
-		Consumer:                       strings.TrimSpace(*consumer),
-		ConsumerNamespace:              strings.TrimSpace(*consumerNamespace),
+		Name:                                strings.Replace(hostName, "_", "-", -1),
+		BMCAddress:                          *bmcAddress,
+		DisableCertificateVerification:      *disableCertificateVerification,
+		Username:                            *username,
+		Password:                            *password,
+		HardwareProfile:                     *hardwareProfile,
+		BootMacAddress:                      *macAddress,
+		Consumer:                            strings.TrimSpace(*consumer),
+		ConsumerNamespace:                   strings.TrimSpace(*consumerNamespace),
+		SwitchPort:                          *switchPort,
+		ProvisioningSwitchPortConfiguration: *ProvisioningSwitchPortConfiguration,
+		SwitchPortConfiguration:             *switchPortConfiguration,
 	}
 	if bootMode != nil {
 		template.BootMode = *bootMode

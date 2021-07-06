@@ -22,6 +22,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	networkV1alpha1 "github.com/Hellcatlk/network-operator/api/v1alpha1"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have
@@ -307,6 +309,18 @@ type FirmwareConfig struct {
 	SriovEnabled *bool `json:"sriovEnabled,omitempty"`
 }
 
+// Port and it's configuration
+type Port struct {
+	// The SwitchPort's reference
+	SwitchPort *networkV1alpha1.SwitchPortReference `json:"switchPort,omitempty"`
+
+	// What network configuration we need used when pxe
+	ProvisioningSwitchPortConfiguration *networkV1alpha1.SwitchPortConfigurationReference `json:"provisioningSwitchPortConfiguration,omitempty"`
+
+	// What network configuration we need used when provisioned
+	SwitchPortConfiguration *networkV1alpha1.SwitchPortConfigurationReference `json:"switchPortConfiguration,omitempty"`
+}
+
 // BareMetalHostSpec defines the desired state of BareMetalHost
 type BareMetalHostSpec struct {
 	// Important: Run "make generate manifests" to regenerate code
@@ -317,6 +331,9 @@ type BareMetalHostSpec struct {
 	// modifications made to the Machine on an ongoing basis.
 	// +optional
 	Taints []corev1.Taint `json:"taints,omitempty"`
+
+	// Include SwitchPort and it's configuration
+	Ports []Port `json:"ports,omitempty"`
 
 	// How do we connect to the BMC?
 	BMC BMCDetails `json:"bmc,omitempty"`
@@ -1008,4 +1025,5 @@ type BareMetalHostList struct {
 
 func init() {
 	SchemeBuilder.Register(&BareMetalHost{}, &BareMetalHostList{})
+	SchemeBuilder.Register(&networkV1alpha1.SwitchPort{}, &networkV1alpha1.SwitchPortList{})
 }

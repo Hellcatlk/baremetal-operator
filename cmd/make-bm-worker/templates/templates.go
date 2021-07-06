@@ -43,20 +43,32 @@ spec:
 {{- if .DisableCertificateVerification }}
   disableCertificateVerification: true
 {{- end}}
+{{- if .SwitchPort}}
+  ports:
+    - switchPort:
+        name: {{ .SwitchPort }}
+      provisioningSwitchPortConfiguration:
+        name: {{ .ProvisioningSwitchPortConfiguration }}
+      switchPortConfiguration:
+        name: {{ .SwitchPortConfiguration }}
+{{- end}}
 `
 
 // Template holds the arguments to pass to the template.
 type Template struct {
-	Name                           string
-	BMCAddress                     string
-	DisableCertificateVerification bool
-	Username                       string
-	Password                       string
-	HardwareProfile                string
-	BootMacAddress                 string
-	BootMode                       string
-	Consumer                       string
-	ConsumerNamespace              string
+	Name                                string
+	BMCAddress                          string
+	DisableCertificateVerification      bool
+	Username                            string
+	Password                            string
+	HardwareProfile                     string
+	BootMacAddress                      string
+	BootMode                            string
+	Consumer                            string
+	ConsumerNamespace                   string
+	SwitchPort                          string
+	ProvisioningSwitchPortConfiguration string
+	SwitchPortConfiguration             string
 }
 
 // EncodedUsername returns the username in the format needed to store

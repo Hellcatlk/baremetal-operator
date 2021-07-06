@@ -134,3 +134,47 @@ spec:
 		t.Fail()
 	}
 }
+
+func TestWithSwitchPort(t *testing.T) {
+	template := Template{
+		Name:                                "hostname",
+		BMCAddress:                          "bmcAddress",
+		Username:                            "username",
+		Password:                            "password",
+		SwitchPort:                          "switchPort",
+		ProvisioningSwitchPortConfiguration: "provisioningSwitchPortConfiguration",
+		SwitchPortConfiguration:             "switchPortConfiguration",
+	}
+	actual, _ := template.Render()
+	expected := `---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hostname-bmc-secret
+type: Opaque
+data:
+  username: dXNlcm5hbWU=
+  password: cGFzc3dvcmQ=
+
+---
+apiVersion: metal3.io/v1alpha1
+kind: BareMetalHost
+metadata:
+  name: hostname
+spec:
+  online: true
+  bmc:
+    address: bmcAddress
+    credentialsName: hostname-bmc-secret
+  ports:
+    - switchPort:
+        name: switchPort
+      provisioningSwitchPortConfiguration:
+        name: provisioningSwitchPortConfiguration
+      switchPortConfiguration:
+        name: switchPortConfiguration
+`
+	if !compareStrings(t, expected, actual) {
+		t.Fail()
+	}
+}
